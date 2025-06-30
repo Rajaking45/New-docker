@@ -1,30 +1,30 @@
-# -------- Stage 1: Build React app --------
-FROM node:20 AS build
+# ------------ Stage 1: Build React App using Vite ------------
+FROM node:18 AS build
 
-# Set working directory in container
 WORKDIR /app
 
-# Copy only the package files first (for layer caching)
+# Install dependencies
 COPY package*.json ./
-
-# Install npm dependencies
 RUN npm install
 
-# Copy the rest of the application code
+# Copy app source code
 COPY . .
 
-# Build the Vite project (output goes to /app/dist)
+# Build the app (output goes to /app/dist)
 RUN npm run build
 
-# -------- Stage 2: Serve with Nginx --------
+
+# ------------ Stage 2: Serve with Nginx ------------
 FROM nginx:stable-alpine
 
-# Copy built files from previous stage to Nginx public folder
+# Copy built files from previous stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 for the app
-EXPOSE 80
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Start Nginx in foreground (no daemon mode)
+# Add custom nginx config
+COPY nginx.conf /etc/nginx/conf.d
+
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
-    
